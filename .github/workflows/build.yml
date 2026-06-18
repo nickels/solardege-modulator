@@ -12,6 +12,19 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  branch-policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only release/development can merge to main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "release/development" ]; then
+            echo "::error::Only release/development can be merged into main. Got: $HEAD_REF"
+            exit 1
+          fi
+
   test:
     runs-on: ubuntu-latest
     steps:
