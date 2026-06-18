@@ -1,10 +1,7 @@
 services:
   solaredge-controller:
     build: .
+    container_name: solaredge-controller
     restart: unless-stopped
-    environment:
-      INVERTERS: ${INVERTERS}
-      EVCC_URL: ${EVCC_URL}
-      POLL_INTERVAL: ${POLL_INTERVAL:-15}
-      STEP_SIZE: ${STEP_SIZE:-5}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    network_mode: host
+    env_file: .env
