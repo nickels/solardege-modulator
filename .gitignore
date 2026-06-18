@@ -47,3 +47,4 @@ poetry.lock
 # Environment variables
 .env
 .env.*
+!.env.example
