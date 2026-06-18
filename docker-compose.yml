@@ -1,7 +1,8 @@
 services:
   solaredge-controller:
-    image: ghcr.io/nickels/solardege-modulator:main
+    image: ghcr.io/nickels/solardege-modulator:latest
     container_name: solaredge-controller
     restart: unless-stopped
+    tty: true
     network_mode: host
     env_file: .env

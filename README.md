@@ -32,9 +32,10 @@ The target ActivePowerLimit percentage is written to all configured inverters vi
 ```yaml
 services:
   solaredge-controller:
-    image: ghcr.io/nickels/solardege-modulator:main
+    image: ghcr.io/nickels/solardege-modulator:latest
     container_name: solaredge-controller
     restart: unless-stopped
+    tty: true
     network_mode: host
     environment:
       INVERTERS: "192.168.1.10:502:1"
@@ -116,9 +117,10 @@ In Container Manager, go to **Project** > **Create**:
 ```yaml
 services:
   solaredge-controller:
-    image: ghcr.io/nickels/solardege-modulator:main
+    image: ghcr.io/nickels/solardege-modulator:latest
     container_name: solaredge-controller
     restart: unless-stopped
+    tty: true
     network_mode: host
     environment:
       INVERTERS: "192.168.1.20:1502:1"
