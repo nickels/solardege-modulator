@@ -1,6 +1,6 @@
 services:
   solaredge-controller:
-    build: .
+    image: solaredge-controller:latest
     container_name: solaredge-controller
     restart: unless-stopped
     network_mode: host
