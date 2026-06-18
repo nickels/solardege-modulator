@@ -38,7 +38,8 @@ feature branch → PR → release/development → PR → main
 - Create feature branches from `release/development`
 - PRs to `release/development` require passing tests
 - Only `release/development` can be merged into `main` (enforced by CI)
-- All merges to `main` are squash merges
+- PRs to `release/development`: use **Squash and merge** (one clean commit per feature)
+- PRs to `main`: use **Create a merge commit** (preserves individual commits from release/development)
 
 ## Making changes
 
