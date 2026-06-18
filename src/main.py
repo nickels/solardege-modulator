@@ -12,10 +12,14 @@ log = logging.getLogger("solaredge-controller")
 
 async def run(cfg: Config) -> None:
     evcc = EvccClient(cfg.evcc_url)
-    inverter = InverterClient(cfg.inverter_host, cfg.inverter_port, cfg.inverter_device_id)
+    inverters = [
+        InverterClient(inv.host, inv.port, inv.device_id)
+        for inv in cfg.inverters
+    ]
     controller = Controller(cfg.step_size)
 
-    inverter.connect()
+    for inv in inverters:
+        inv.connect()
 
     loop = asyncio.get_running_loop()
     stop = asyncio.Event()
@@ -35,7 +39,8 @@ async def run(cfg: Config) -> None:
                 state = await evcc.fetch_state()
                 limit = controller.update(state)
                 if limit != last_limit:
-                    inverter.write_power_limit(limit)
+                    for inv in inverters:
+                        inv.write_power_limit(limit)
                     last_limit = limit
                 log.info(
                     "mode=%s grid=%.0fW feedin=%.4f€ grid_tariff=%.4f€ limit=%d%%",
@@ -53,7 +58,8 @@ async def run(cfg: Config) -> None:
             except asyncio.TimeoutError:
                 pass
     finally:
-        inverter.close()
+        for inv in inverters:
+            inv.close()
         await evcc.close()
 
 
@@ -64,13 +70,14 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
     log.info(
-        "Starting: inverter=%s:%d evcc=%s interval=%ds step=%d%%",
-        cfg.inverter_host,
-        cfg.inverter_port,
+        "Starting: %d inverter(s) evcc=%s interval=%ds step=%d%%",
+        len(cfg.inverters),
         cfg.evcc_url,
         cfg.poll_interval,
         cfg.step_size,
     )
+    for inv in cfg.inverters:
+        log.info("  inverter=%s:%d device_id=%d", inv.host, inv.port, inv.device_id)
     asyncio.run(run(cfg))
 
 
