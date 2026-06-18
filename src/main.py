@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import signal
-import sys
 
 from config import Config
 from controller import Controller
@@ -18,7 +17,7 @@ async def run(cfg: Config) -> None:
 
     inverter.connect()
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     stop = asyncio.Event()
 
     def _shutdown(sig: signal.Signals) -> None:

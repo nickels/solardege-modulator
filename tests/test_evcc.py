@@ -11,7 +11,6 @@ SAMPLE_RESPONSE = {
 }
 
 
-@pytest.mark.asyncio
 async def test_fetch_state(httpx_mock):
     httpx_mock.add_response(json=SAMPLE_RESPONSE)
     client = EvccClient("http://test:7070")
@@ -24,7 +23,6 @@ async def test_fetch_state(httpx_mock):
     )
 
 
-@pytest.mark.asyncio
 async def test_fetch_state_http_error(httpx_mock):
     httpx_mock.add_response(status_code=500)
     client = EvccClient("http://test:7070")

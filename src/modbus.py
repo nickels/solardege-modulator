@@ -20,14 +20,14 @@ class InverterClient:
 
     def write_power_limit(self, percent: int) -> None:
         percent = max(0, min(100, percent))
-        self._client.write_register(ACTIVE_POWER_LIMIT, percent, slave=1)
+        self._client.write_register(ACTIVE_POWER_LIMIT, percent, device_id=1)
         log.debug("Wrote ActivePowerLimit = %d%%", percent)
 
     def close(self) -> None:
         if self._client:
             try:
-                self._client.write_register(ACTIVE_POWER_LIMIT, 100, slave=1)
-                log.info("Restored ActivePowerLimit to 100%%")
+                self._client.write_register(ACTIVE_POWER_LIMIT, 100, device_id=1)
+                log.info("Restored ActivePowerLimit to 100%")
             except Exception:
                 log.warning("Failed to restore ActivePowerLimit on shutdown")
             self._client.close()
