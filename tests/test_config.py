@@ -17,6 +17,7 @@ def test_from_env_defaults(monkeypatch):
     assert cfg.inverter_port == 1502
     assert cfg.poll_interval == 15
     assert cfg.step_size == 5
+    assert cfg.inverter_device_id == 1
     assert cfg.log_level == "INFO"
 
 
@@ -26,11 +27,13 @@ def test_from_env_overrides(monkeypatch):
     monkeypatch.setenv("EVCC_URL", "http://evcc:7070")
     monkeypatch.setenv("POLL_INTERVAL", "30")
     monkeypatch.setenv("STEP_SIZE", "10")
+    monkeypatch.setenv("INVERTER_DEVICE_ID", "2")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
     cfg = Config.from_env()
     assert cfg.inverter_port == 502
     assert cfg.poll_interval == 30
     assert cfg.step_size == 10
+    assert cfg.inverter_device_id == 2
     assert cfg.log_level == "DEBUG"
 
 
