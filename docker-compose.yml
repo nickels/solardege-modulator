@@ -1,0 +1,11 @@
+services:
+  solaredge-controller:
+    build: .
+    restart: unless-stopped
+    environment:
+      INVERTER_HOST: ${INVERTER_HOST}
+      INVERTER_PORT: ${INVERTER_PORT:-1502}
+      EVCC_URL: ${EVCC_URL}
+      POLL_INTERVAL: ${POLL_INTERVAL:-15}
+      STEP_SIZE: ${STEP_SIZE:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
