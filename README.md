@@ -100,7 +100,17 @@ docker build -t solaredge-controller .
 
 Tested on DS720+ (DSM 7.4) with Container Manager.
 
-### 1. Build and export the image
+### 1. Get the image
+
+**Option A: Pull from GitHub Container Registry**
+
+In Container Manager, go to **Image** > **Add** > **Add From URL**:
+
+- URL: `ghcr.io/nickels/solardege-modulator:main`
+- Username: your GitHub username
+- Password: a [GitHub Personal Access Token](https://github.com/settings/tokens) with `read:packages` scope
+
+**Option B: Build and import manually**
 
 On your development machine:
 
@@ -109,14 +119,9 @@ docker build --platform linux/amd64 -t solaredge-controller .
 docker save solaredge-controller | gzip > solaredge-controller.tar.gz
 ```
 
-### 2. Import the image
+Copy the tarball to the NAS, then in Container Manager: **Image** > **Add** > **Add from File** > select the tarball.
 
-Copy the tarball to the NAS and import it via Container Manager:
-
-- Go to **Image** > **Add** > **Add from File**
-- Select `solaredge-controller.tar.gz`
-
-### 3. Create a project
+### 2. Create a project
 
 - Go to **Project** > **Create**
 - Set project name (e.g. `solaredge-controller`) and path (e.g. `/docker/solaredge-controller`)
@@ -126,7 +131,7 @@ Copy the tarball to the NAS and import it via Container Manager:
 ```yaml
 services:
   solaredge-controller:
-    image: solaredge-controller:latest
+    image: ghcr.io/nickels/solardege-modulator:main
     container_name: solaredge-controller
     restart: unless-stopped
     network_mode: host
