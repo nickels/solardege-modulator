@@ -2,7 +2,7 @@ name: Build and publish container image
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**", "development/**"]
     tags: ["v*"]
   pull_request:
     branches: [main]
@@ -42,6 +42,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=nightly,enable=${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
