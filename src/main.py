@@ -12,7 +12,7 @@ log = logging.getLogger("solaredge-controller")
 
 async def run(cfg: Config) -> None:
     evcc = EvccClient(cfg.evcc_url)
-    inverter = InverterClient(cfg.inverter_host, cfg.inverter_port)
+    inverter = InverterClient(cfg.inverter_host, cfg.inverter_port, cfg.inverter_device_id)
     controller = Controller(cfg.step_size)
 
     inverter.connect()
