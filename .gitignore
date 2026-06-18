@@ -41,6 +41,9 @@ poetry.lock
 *.swo
 *~
 
+#claude
+.claude/.tdd-state
+
 # macOS
 .DS_Store
 
