@@ -36,11 +36,16 @@ INVERTERS=192.168.1.10:502:1
 EVCC_URL=http://your-evcc:7070
 ```
 
-4. Load the image and start:
+4. Pull the image and start:
 
 ```bash
-docker load < solaredge-controller.tar.gz
 docker compose up -d
+```
+
+The image is published to GitHub Container Registry on every push to `main`. To pull manually:
+
+```bash
+docker pull ghcr.io/<owner>/solaredge-moduleren:main
 ```
 
 ## Configuration
