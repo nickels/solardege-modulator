@@ -1,52 +1,47 @@
 # evcc Based SolarEdge Modulator
 
-A lightweight Python daemon that controls SolarEdge inverter power output based on real-time electricity prices from [EVCC](https://evcc.io). Designed for the Dutch energy market with Zonneplan dynamic pricing.
+A lightweight Python daemon that controls SolarEdge inverter power output based on real-time electricity prices from [evcc](https://evcc.io). Works with any energy provider and tariff configuration that evcc supports (Tibber, aWATTar, Zonneplan, Octopus, ENTSO-E, custom, etc.).
 
-## What it does
+## How it works
 
-The controller polls EVCC every N seconds and operates in one of three modes:
+The controller reads two price signals from evcc's REST API every cycle:
+
+- **Grid import tariff** (`tariffGrid`) — what you pay to consume from the grid
+- **Feed-in tariff** (`tariffFeedIn`) — what you earn (or pay) to export to the grid
+
+Based on these prices and the current grid meter reading, it selects one of three modes:
 
 | Mode | Condition | Action |
 |---|---|---|
-| **GRID_OFF** | Grid consumption price < 0 | PV output to 0% — maximize cheap grid draw |
-| **THROTTLE** | Feed-in tariff < 0 | Step PV down to keep grid export near 0W — self-consume only |
-| **FULL** | Both prices >= 0 | PV at 100% — export surplus and earn feed-in tariff |
+| **GRID_OFF** | Import tariff < 0 | PV to 0% — maximize cheap grid draw |
+| **THROTTLE** | Feed-in tariff < 0 | Step PV down to keep grid export near 0W |
+| **FULL** | Both tariffs >= 0 | PV at 100% — export surplus and earn feed-in tariff |
 
-The same percentage is written to all configured inverters via Modbus TCP (register `0xF001` ActivePowerLimit).
+GRID_OFF takes priority: if both tariffs are negative, PV is killed to maximize grid draw.
+
+The target ActivePowerLimit percentage is written to all configured inverters via Modbus TCP (SunSpec register `0xF001`).
 
 ## Requirements
 
 - SolarEdge inverter(s) with Modbus TCP enabled
-- [EVCC](https://evcc.io) instance with dynamic tariff configured
-- Docker (tested on Synology DS720+ with Container Manager)
+- [evcc](https://evcc.io) instance with a grid tariff and feed-in tariff configured
+- Docker host (tested on Synology DS720+ with Container Manager)
 
 ## Quick start
 
-1. Copy `docker-compose.yml` and `.env.example` to your Docker host
-2. Create `.env` from the example:
-
-```bash
-cp .env.example .env
+```yaml
+services:
+  solaredge-controller:
+    image: ghcr.io/nickels/solardege-modulator:main
+    container_name: solaredge-controller
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      INVERTERS: "192.168.1.10:502:1"
+      EVCC_URL: "http://192.168.1.20:7070"
 ```
 
-3. Edit `.env` with your values:
-
-```
-INVERTERS=192.168.1.10:502:1
-EVCC_URL=http://your-evcc:7070
-```
-
-4. Pull the image and start:
-
-```bash
-docker compose up -d
-```
-
-The image is published to GitHub Container Registry on every push to `main`. To pull manually:
-
-```bash
-docker pull ghcr.io/<owner>/solaredge-moduleren:main
-```
+Replace `INVERTERS` with your inverter's Modbus TCP address (`host:port:device_id`) and `EVCC_URL` with your evcc instance URL.
 
 ## Configuration
 
@@ -55,17 +50,17 @@ All via environment variables:
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `INVERTERS` | yes | — | Comma-separated list of `host:port:device_id` |
-| `EVCC_URL` | yes | — | EVCC base URL |
+| `EVCC_URL` | yes | — | evcc base URL (e.g. `http://192.168.1.20:7070`) |
 | `POLL_INTERVAL` | no | `15` | Seconds between control loop cycles |
 | `STEP_SIZE` | no | `5` | ActivePowerLimit adjustment per cycle in THROTTLE mode (%) |
 | `LOG_LEVEL` | no | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 
 ### Multiple inverters
 
-Each inverter gets the same ActivePowerLimit percentage. The grid meter (read from EVCC) reflects combined production, so the feedback loop self-corrects.
+Each inverter gets the same ActivePowerLimit percentage. The grid meter (read from evcc) reflects combined production, so the feedback loop self-corrects.
 
 ```
-INVERTERS=192.168.1.10:502:1,192.168.1.11:502:1
+INVERTERS=192.168.1.10:502:1,192.168.1.11:502:2
 ```
 
 ## How THROTTLE mode works
@@ -78,9 +73,18 @@ When the feed-in tariff goes negative, exporting costs money. The controller ste
 
 PV continues to serve local consumption — only surplus export is suppressed.
 
-## Shutdown safety
+## Error handling
 
-On SIGTERM/SIGINT, the controller restores ActivePowerLimit to 100% before exiting. If the container crashes, the inverter resets to 100% on its own restart cycle.
+- **evcc API unreachable**: the controller holds the last ActivePowerLimit unchanged and logs the error. It retries on the next cycle.
+- **Modbus write failure**: logged, retried next cycle. The inverter continues at its last known limit.
+- **Shutdown (SIGTERM/SIGINT)**: the controller restores ActivePowerLimit to 100% before exiting.
+- **Container crash**: the inverter resets to 100% on its own restart cycle.
+
+## evcc tariff setup
+
+This controller reads `tariffGrid` and `tariffFeedIn` from evcc's `/api/state` endpoint. These values come from your evcc tariff configuration. Any tariff source evcc supports will work — the controller is provider-agnostic.
+
+See the [evcc tariff documentation](https://docs.evcc.io/docs/reference/configuration/tariffs) for how to configure your energy provider.
 
 ## Building from source
 
@@ -134,16 +138,16 @@ Click **Next**, then **Done**. Container Manager will pull the image from GHCR a
 
 To pull a newer version, go to **Project** > select `solaredge-controller` > **Action** > **Build** (this re-pulls the image and recreates the container).
 
-### Using EVCC's Modbus Proxy
+### Using evcc's Modbus Proxy
 
-SolarEdge inverters accept only a single Modbus TCP connection. If EVCC is already connected to the inverter directly, adding a second connection from this controller will cause conflicts.
+SolarEdge inverters accept only a single Modbus TCP connection. If evcc is already connected to the inverter directly, adding a second connection from this controller will cause conflicts.
 
-EVCC provides a [Modbus Proxy](https://docs.evcc.io/docs/reference/configuration/modbusproxy) feature that multiplexes a single connection to the inverter and exposes it to multiple clients. To use it:
+evcc provides a [Modbus Proxy](https://docs.evcc.io/docs/reference/configuration/modbusproxy) feature that multiplexes a single connection to the inverter and exposes it to multiple clients. To use it:
 
-1. In EVCC, go to **Configuration** > **Modbus Proxy**
+1. In evcc, go to **Configuration** > **Modbus Proxy**
 2. Set the proxy **Port** (e.g. `1502`), **Readonly** to `no` (write access needed), device connection to **Network / TCP** pointing at the inverter's real IP and port (e.g. `192.168.1.10:502`)
-3. Point both EVCC's own PV meter and this controller at the proxy address instead of the inverter directly:
-   - EVCC PV meter: `192.168.1.20:1502` (the EVCC host + proxy port)
+3. Point both evcc's own PV meter and this controller at the proxy address instead of the inverter directly:
+   - evcc PV meter: `192.168.1.20:1502` (the evcc host + proxy port)
    - This controller's `INVERTERS`: `192.168.1.20:1502:1`
 
 This ensures all Modbus traffic goes through a single managed connection to the inverter.
