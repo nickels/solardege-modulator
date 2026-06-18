@@ -1,4 +1,4 @@
-# EVCC.io Based SolarEdge Modulator
+# evcc Based SolarEdge Modulator
 
 A lightweight Python daemon that controls SolarEdge inverter power output based on real-time electricity prices from [EVCC](https://evcc.io). Designed for the Dutch energy market with Zonneplan dynamic pricing.
 
