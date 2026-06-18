@@ -100,33 +100,14 @@ docker build -t solaredge-controller .
 
 Tested on DS720+ (DSM 7.4) with Container Manager.
 
-### 1. Get the image
+### 1. Create a project
 
-**Option A: Pull from GitHub Container Registry**
+In Container Manager, go to **Project** > **Create**:
 
-In Container Manager, go to **Image** > **Add** > **Add From URL**:
-
-- URL: `ghcr.io/nickels/solardege-modulator:main`
-- Username: your GitHub username
-- Password: a [GitHub Personal Access Token](https://github.com/settings/tokens) with `read:packages` scope
-
-**Option B: Build and import manually**
-
-On your development machine:
-
-```bash
-docker build --platform linux/amd64 -t solaredge-controller .
-docker save solaredge-controller | gzip > solaredge-controller.tar.gz
-```
-
-Copy the tarball to the NAS, then in Container Manager: **Image** > **Add** > **Add from File** > select the tarball.
-
-### 2. Create a project
-
-- Go to **Project** > **Create**
-- Set project name (e.g. `solaredge-controller`) and path (e.g. `/docker/solaredge-controller`)
-- Source: **Upload docker-compose.yml**
-- Paste the following compose configuration with your values:
+- **Project name**: `solaredge-controller`
+- **Path**: `/docker/solaredge-controller`
+- **Source**: Upload docker-compose.yml
+- Paste the following compose configuration, replacing the environment values with your own:
 
 ```yaml
 services:
@@ -136,16 +117,22 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      INVERTERS: "192.168.1.10:1502:1"
+      INVERTERS: "192.168.1.20:1502:1"
       EVCC_URL: "http://192.168.1.20:7070"
       POLL_INTERVAL: "15"
       STEP_SIZE: "5"
       LOG_LEVEL: "INFO"
 ```
 
+Click **Next**, then **Done**. Container Manager will pull the image from GHCR and start the container automatically.
+
 > **Note:** Synology Container Manager does not support `env_file:` references — environment variables must be inline in the compose YAML.
 
 `network_mode: host` gives the container direct LAN access to reach the inverter via Modbus TCP without port mapping.
+
+### Updating the image
+
+To pull a newer version, go to **Project** > select `solaredge-controller` > **Action** > **Build** (this re-pulls the image and recreates the container).
 
 ### Using EVCC's Modbus Proxy
 
