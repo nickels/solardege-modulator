@@ -93,13 +93,63 @@ docker build -t solaredge-controller .
 
 ## Synology deployment
 
-For Synology NAS with Container Manager:
+Tested on DS720+ (DSM 7.4) with Container Manager.
 
-1. Build the image: `docker build --platform linux/amd64 -t solaredge-controller .`
-2. Export: `docker save solaredge-controller | gzip > solaredge-controller.tar.gz`
-3. Copy tarball to NAS
-4. In Container Manager: **Project** > Create > paste `docker-compose.yml` with inline environment variables
-5. Use `network_mode: host` for LAN Modbus access
+### 1. Build and export the image
+
+On your development machine:
+
+```bash
+docker build --platform linux/amd64 -t solaredge-controller .
+docker save solaredge-controller | gzip > solaredge-controller.tar.gz
+```
+
+### 2. Import the image
+
+Copy the tarball to the NAS and import it via Container Manager:
+
+- Go to **Image** > **Add** > **Add from File**
+- Select `solaredge-controller.tar.gz`
+
+### 3. Create a project
+
+- Go to **Project** > **Create**
+- Set project name (e.g. `solaredge-controller`) and path (e.g. `/docker/solaredge-controller`)
+- Source: **Upload docker-compose.yml**
+- Paste the following compose configuration with your values:
+
+```yaml
+services:
+  solaredge-controller:
+    image: solaredge-controller:latest
+    container_name: solaredge-controller
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      INVERTERS: "192.168.1.10:1502:1"
+      EVCC_URL: "http://192.168.1.20:7070"
+      POLL_INTERVAL: "15"
+      STEP_SIZE: "5"
+      LOG_LEVEL: "INFO"
+```
+
+> **Note:** Synology Container Manager does not support `env_file:` references — environment variables must be inline in the compose YAML.
+
+`network_mode: host` gives the container direct LAN access to reach the inverter via Modbus TCP without port mapping.
+
+### Using EVCC's Modbus Proxy
+
+SolarEdge inverters accept only a single Modbus TCP connection. If EVCC is already connected to the inverter directly, adding a second connection from this controller will cause conflicts.
+
+EVCC provides a [Modbus Proxy](https://docs.evcc.io/docs/reference/configuration/modbusproxy) feature that multiplexes a single connection to the inverter and exposes it to multiple clients. To use it:
+
+1. In EVCC, go to **Configuration** > **Modbus Proxy**
+2. Set the proxy **Port** (e.g. `1502`), **Readonly** to `no` (write access needed), device connection to **Network / TCP** pointing at the inverter's real IP and port (e.g. `192.168.1.10:502`)
+3. Point both EVCC's own PV meter and this controller at the proxy address instead of the inverter directly:
+   - EVCC PV meter: `192.168.1.20:1502` (the EVCC host + proxy port)
+   - This controller's `INVERTERS`: `192.168.1.20:1502:1`
+
+This ensures all Modbus traffic goes through a single managed connection to the inverter.
 
 ## License
 
