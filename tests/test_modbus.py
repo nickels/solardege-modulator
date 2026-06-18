@@ -11,7 +11,7 @@ def test_write_power_limit():
     client.write_power_limit(75)
 
     mock_modbus.write_register.assert_called_once_with(
-        ACTIVE_POWER_LIMIT, 75, slave=1
+        ACTIVE_POWER_LIMIT, 75, device_id=1
     )
 
 
@@ -21,10 +21,10 @@ def test_write_power_limit_clamps_range():
     client._client = mock_modbus
 
     client.write_power_limit(150)
-    mock_modbus.write_register.assert_called_with(ACTIVE_POWER_LIMIT, 100, slave=1)
+    mock_modbus.write_register.assert_called_with(ACTIVE_POWER_LIMIT, 100, device_id=1)
 
     client.write_power_limit(-10)
-    mock_modbus.write_register.assert_called_with(ACTIVE_POWER_LIMIT, 0, slave=1)
+    mock_modbus.write_register.assert_called_with(ACTIVE_POWER_LIMIT, 0, device_id=1)
 
 
 def test_connect_creates_client():
@@ -47,6 +47,6 @@ def test_close_writes_100_and_disconnects():
     client.close()
 
     mock_modbus.write_register.assert_called_once_with(
-        ACTIVE_POWER_LIMIT, 100, slave=1
+        ACTIVE_POWER_LIMIT, 100, device_id=1
     )
     mock_modbus.close.assert_called_once()
