@@ -1,6 +1,6 @@
 services:
   solaredge-controller:
-    image: solaredge-controller:latest
+    image: ghcr.io/nickels/solardege-modulator:main
     container_name: solaredge-controller
     restart: unless-stopped
     network_mode: host
